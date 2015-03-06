@@ -1,5 +1,4 @@
 """PostgreSQL check
-
 Collects database-wide metrics and optionally per-relation metrics, custom metrics.
 """
 # project
@@ -197,6 +196,29 @@ SELECT %s
 """
     }
 
+    STATIO_METRICS = {
+        'descriptors': [
+            ('relname', 'table'),
+        ],
+        'metrics': {
+            'schemaname'      : ('postgresql.schemaname', RATE),
+            'heap_blks_read'  : ('postgresql.heap_blks_read', RATE),
+            'heap_blks_hit'   : ('postgresql.heap_blks_hit', RATE),
+            'idx_blks_read'   : ('postgresql.idx_blks_read', RATE),
+            'idx_blks_hit'    : ('postgresql.idx_blks_hit', RATE),
+            'toast_blks_read' : ('postgresql.toast_blks_read', RATE),
+            'toast_blks_hit'  : ('postgresql.toast_blks_hit', RATE),
+            'tidx_blks_read'  : ('postgresql.tidx_blks_read', RATE),
+            'tidx_blks_hit'   : ('postgresql.tidx_blks_hit', RATE),
+        },
+        'query': """
+SELECT relname,
+       %s
+  FROM pg_statio_all_tables
+ WHERE relname = ANY(%s)""",
+        'relation': True,
+    }
+
     def __init__(self, name, init_config, agentConfig, instances=None):
         AgentCheck.__init__(self, name, init_config, agentConfig, instances)
         self.dbs = {}
@@ -227,10 +249,10 @@ SELECT %s
         return False
 
     def _is_9_1_or_above(self, key, db):
-        return self._is_above(key, db, [9,1,0])
+        return self._is_above(key, db, [9, 1, 0])
 
     def _is_9_2_or_above(self, key, db):
-        return self._is_above(key, db, [9,2,0])
+        return self._is_above(key, db, [9, 2, 0])
 
     def _get_instance_metrics(self, key, db):
         """Use either COMMON_METRICS or COMMON_METRICS + NEWER_92_METRICS
@@ -239,7 +261,7 @@ SELECT %s
         """
         # Extended 9.2+ metrics if needed
         metrics = self.instance_metrics.get(key)
-        
+
         if metrics is None:
 
             # Hack to make sure that if we have multiple instances that connect to
@@ -305,7 +327,7 @@ SELECT %s
             self.DB_METRICS,
             self.CONNECTION_METRICS,
             self.BGW_METRICS,
-            self.LOCK_METRICS
+            self.LOCK_METRICS,
         ]
 
         # Do we need relation-specific metrics?
@@ -313,12 +335,13 @@ SELECT %s
             metric_scope += [
                 self.REL_METRICS,
                 self.IDX_METRICS,
-                self.SIZE_METRICS
+                self.SIZE_METRICS,
+                self.STATIO_METRICS,
             ]
 
         # Only available for >= 9.1 due to
         # pg_last_xact_replay_timestamp
-        if self._is_9_1_or_above(key,db):
+        if self._is_9_1_or_above(key, db):
             metric_scope.append(self.REPLICATION_METRICS)
 
         full_metric_scope = list(metric_scope) + custom_metrics
@@ -326,7 +349,7 @@ SELECT %s
             cursor = db.cursor()
 
             for scope in full_metric_scope:
-                if scope == self.REPLICATION_METRICS or not self._is_above(key, db, [9,0,0]):
+                if scope == self.REPLICATION_METRICS or not self._is_above(key, db, [9, 0, 0]):
                     log_func = self.log.debug
                     warning_func = self.log.debug
                 else:
@@ -458,9 +481,9 @@ SELECT %s
             self.log.debug("Metric: {0}".format(m))
 
             for k, v in m['metrics'].items():
-                if v[1].upper() not in ['RATE','GAUGE','MONOTONIC']:
+                if v[1].upper() not in ('RATE', 'GAUGE', 'MONOTONIC'):
                     raise CheckException("Collector method {0} is not known."\
-                        "Known methods are RATE,GAUGE,MONOTONIC".format(
+                        "Known methods are RATE, GAUGE, MONOTONIC".format(
                             v[1].upper()))
                                   
                 m['metrics'][k][1] = getattr(PostgreSql, v[1].upper())
