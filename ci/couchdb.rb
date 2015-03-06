@@ -41,16 +41,16 @@ namespace :ci do
         sh %(tar zxf $VOLATILE_DIR/icu.tar.gz\
              -C $VOLATILE_DIR/icu --strip-components=1)
         sh %(cd $VOLATILE_DIR/erlang\
-             && ./configure --prefix=#{couchdb_rootdir}/\
-             && make -j $CONCURRENCY\
+             && ./configure --prefix=#{couchdb_rootdir}/ >& /dev/null\
+             && make -j $CONCURRENCY >& /dev/null\
              && make install)
         sh %(cd $VOLATILE_DIR/js185/js/src\
-             && ./configure --prefix=#{couchdb_rootdir}/\
-             && make -j $CONCURRENCY\
+             && ./configure --prefix=#{couchdb_rootdir}/ >& /dev/null\
+             && make -j $CONCURRENCY >& /dev/null\
              && make install)
         sh %(cd $VOLATILE_DIR/icu/source\
-             && ./configure --prefix=#{couchdb_rootdir}/\
-             && make -j $CONCURRENCY\
+             && ./configure --prefix=#{couchdb_rootdir}/ >& /dev/null\
+             && make -j $CONCURRENCY >& /dev/null\
              && make install)
         ENV['PATH'] = "#{couchdb_rootdir}/bin:#{ENV['PATH']}"
         ENV['LD_LIBRARY_PATH'] = "#{couchdb_rootdir}/lib:#{ENV['LD_LIBRARY_PATH']}"
