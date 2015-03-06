@@ -8,6 +8,7 @@ from checks import AgentCheck
 # 3rd party
 import requests
 
+
 class CouchDb(AgentCheck):
     """Extracts stats from CouchDB via its REST API
     http://wiki.apache.org/couchdb/Runtime_Statistics
@@ -43,7 +44,7 @@ class CouchDb(AgentCheck):
             auth = (instance['user'], instance['password'])
 
         r = requests.get(url, auth=auth, headers=headers(self.agentConfig),
-            timeout=instance.get('timeout', self.TIMEOUT))
+                         timeout=int(instance.get('timeout', self.TIMEOUT)))
         r.raise_for_status()
         return r.json()
 
